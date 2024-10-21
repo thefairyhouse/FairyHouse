@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Pro MIDI Controller</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+            font-family: Arial, sans-serif;
+        }
+        .button {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:active {
+            background-color: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <button class="button" id="startSessionBtn">Start Session in Logic</button>
+        <div class="status" id="status">Waiting for interaction...</div>
+    </div>
+
+    <script>
+        let midiAccess = null;
+        let midiOutput = null;
+
+        // Request access to the Web MIDI API
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess({ sysex: false })
+                .then(onMIDISuccess, onMIDIFailure);
+        } else {
+            document.getElementById('status').textContent = "Web MIDI is not supported in this browser.";
+        }
+
+        function onMIDISuccess(midi) {
+            midiAccess = midi;
+
+            // Find available MIDI outputs
+            const outputs = Array.from(midiAccess.outputs.values());
+            if (outputs.length > 0) {
+                midiOutput = outputs[0]; // Select the first available output
+                document.getElementById('status').textContent = "MIDI output found!";
+            } else {
+                document.getElementById('status').textContent = "No MIDI output available.";
+            }
+        }
+
+        function onMIDIFailure() {
+            document.getElementById('status').textContent = "Could not access your MIDI devices.";
+        }
+
+        // Function to send the MIDI "Start" command (0xFA)
+        function sendMIDIStart() {
+            if (midiOutput) {
+                // 0xFA is the MIDI start command
+                const startMessage = [0xFA];
+                midiOutput.send(startMessage);
+                document.getElementById('status').textContent = "Start message sent to Logic!";
+            } else {
+                document.getElementById('status').textContent = "No MIDI output selected.";
+            }
+        }
+
+        // Event listener for the button
+        document.getElementById('startSessionBtn').addEventListener('click', sendMIDIStart);
+    </script>
+</body>
+</html>
